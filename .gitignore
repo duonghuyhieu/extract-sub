@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual env (uv-managed)
+.venv/
+venv/
+env/
+
+# Uploads & generated outputs
+uploads/
+outputs/
+
+# Local OCR model cache (auto-downloaded)
+*.onnx
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

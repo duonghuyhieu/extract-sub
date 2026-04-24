@@ -1,0 +1,30 @@
+[project]
+name = "extract-sub"
+version = "0.1.0"
+description = "Local OCR-based hardcoded-subtitle extractor (web UI)"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.6",
+    "python-multipart>=0.0.12",
+    "opencv-python>=4.10.0.84",
+    "numpy>=1.26.4,<2",
+    # New unified RapidOCR package (3.x) — supports PP-OCRv5 models
+    # with markedly better Chinese recognition vs the old v4 lite.
+    "rapidocr>=3.3.0",
+    "rapidfuzz>=3.9.7",
+    # Pin onnxruntime to a range that still ships Python 3.10 wheels.
+    # 1.20+ dropped cp310 on some platforms.
+    "onnxruntime>=1.17,<1.20",
+]
+
+[project.optional-dependencies]
+# GPU acceleration for AMD / Intel GPUs on Windows via DirectML.
+# Install with:  uv sync --extra gpu-directml
+# Replaces the default CPU onnxruntime with the DirectML build.
+gpu-directml = [
+    "onnxruntime-directml>=1.17,<1.20",
+]
+
+[tool.uv]
+package = false
