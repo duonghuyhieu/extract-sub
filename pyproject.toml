@@ -1,7 +1,7 @@
 [project]
 name = "extract-sub"
-version = "0.1.0"
-description = "Local OCR-based hardcoded-subtitle extractor (web UI)"
+version = "0.2.0"
+description = "Local media toolkit — hardcoded subtitle OCR + speech-to-text"
 requires-python = ">=3.10,<3.13"
 dependencies = [
     "fastapi>=0.115.0",
@@ -9,21 +9,35 @@ dependencies = [
     "python-multipart>=0.0.12",
     "opencv-python>=4.10.0.84",
     "numpy>=1.26.4,<2",
-    # New unified RapidOCR package (3.x) — supports PP-OCRv5 models
-    # with markedly better Chinese recognition vs the old v4 lite.
+    # Vision OCR — RapidOCR 3.x with PP-OCRv5 weights.
     "rapidocr>=3.3.0",
     "rapidfuzz>=3.9.7",
     # Pin onnxruntime to a range that still ships Python 3.10 wheels.
     # 1.20+ dropped cp310 on some platforms.
     "onnxruntime>=1.17,<1.20",
+    # Speech-to-text — faster-whisper (CTranslate2 backend, ~4x speedup
+    # over openai-whisper). PyAV ships with it for direct video decoding.
+    "faster-whisper>=1.0.3",
+    # Video downloader — yt-dlp (active fork of youtube-dl).
+    # Optional: install ffmpeg system-wide for merging best video+audio
+    # streams (otherwise the 'Best' / '1080p' presets fall back to single
+    # streams, max ~720p on YouTube).
+    "yt-dlp>=2024.08.06",
 ]
 
 [project.optional-dependencies]
-# GPU acceleration for AMD / Intel GPUs on Windows via DirectML.
+# Vision-OCR GPU acceleration for AMD / Intel GPUs on Windows via DirectML.
 # Install with:  uv sync --extra gpu-directml
-# Replaces the default CPU onnxruntime with the DirectML build.
 gpu-directml = [
     "onnxruntime-directml>=1.17,<1.20",
+]
+# Speech-to-text GPU acceleration for NVIDIA GPUs via CUDA + cuDNN.
+# Install with:  uv sync --extra gpu-cuda
+# Whisper int8 on CPU is already fast enough for most clips, so this is
+# only worth installing for long videos or large-v3 model usage.
+gpu-cuda = [
+    "nvidia-cublas-cu12",
+    "nvidia-cudnn-cu12>=9",
 ]
 
 [tool.uv]

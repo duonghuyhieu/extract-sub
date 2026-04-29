@@ -28,3 +28,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# User-specific runtime config (generated on first use)
+downloader_settings.json

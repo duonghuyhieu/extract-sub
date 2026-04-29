@@ -371,6 +371,8 @@ class SubtitleExtractor:
 
             duration = total_frames / fps
             step = max(1, int(round(fps / max(0.1, sample_fps))))
+            sample_period = step / fps          # gap between consecutive samples (s)
+            half_period = sample_period / 2     # midpoint correction — see below
             x1, y1, x2, y2 = box.to_pixels(width, height)
 
             if x2 <= x1 or y2 <= y1:
@@ -389,6 +391,14 @@ class SubtitleExtractor:
                     break
 
                 ts = frame_idx / fps
+                # A sample taken at `ts` could equally represent any moment in
+                # the surrounding sample interval, so a subtitle first detected
+                # here was almost certainly already on screen *before* `ts`.
+                # Bias every segment boundary backward by half a sample period
+                # — that centres the timing error on zero instead of leaving
+                # subtitles consistently late by up to one full period.
+                ts_eff = max(0.0, ts - half_period)
+
                 crop = frame[y1:y2, x1:x2]
                 text, score = self._ocr_crop(crop)
                 text = _normalize(text)
@@ -401,21 +411,21 @@ class SubtitleExtractor:
                 if current is None:
                     if text:
                         current = Segment(
-                            start=ts, end=ts, text=text,
+                            start=ts_eff, end=ts_eff, text=text,
                             all_texts=[(text, score)],
                         )
                 else:
                     if text and _similar(text, current.text, similarity_threshold):
-                        current.end = ts
+                        current.end = ts_eff
                         current.samples += 1
                         current.all_texts.append((text, score))
                     else:
-                        current.end = ts
+                        current.end = ts_eff
                         current.text = _pick_best_text(current.all_texts)
                         if (current.end - current.start) * 1000 >= min_segment_ms:
                             segments.append(current)
                         current = Segment(
-                            start=ts, end=ts, text=text,
+                            start=ts_eff, end=ts_eff, text=text,
                             all_texts=[(text, score)],
                         ) if text else None
 
