@@ -531,6 +531,10 @@
           </button>
         </div>
         <div class="task-bulk">
+          <button type="button" class="secondary btn-tight" id="tasks-notify-toggle"
+                  title="Show a desktop notification when a task completes">
+            <span aria-hidden="true">🔔</span> <span id="tasks-notify-label">Bật thông báo</span>
+          </button>
           <button type="button" class="secondary btn-tight" data-bulk="done"   title="Remove every successfully-completed job">Clear done</button>
           <button type="button" class="secondary btn-tight" data-bulk="error"  title="Remove every failed job">Clear errors</button>
           <button type="button" class="secondary btn-tight" data-bulk="all"    title="Remove every job (running ones keep running)">Clear all</button>
@@ -542,6 +546,10 @@
     </section>
   </main>
 </div>
+
+<!-- Toast stack — in-app fallback for task completion notifications when
+     the browser blocks the Notification API or the tab is in focus. -->
+<div id="toast-stack" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
 
 <script type="module" src="js/app.js"></script>
 </body>

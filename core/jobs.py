@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 
 
@@ -149,3 +149,39 @@ def preview(job_id: str):
         return JSONResponse({"text": "", "binary": True})
     text = job.output_path.read_text(encoding="utf-8")
     return JSONResponse({"text": text, "format": job.output_format})
+
+
+@router.put("/{job_id}/preview")
+def save_preview(job_id: str, payload: dict = Body(...)):
+    """Overwrite a text-format artefact with edited content from the UI.
+
+    Only allowed for srt/vtt/txt/json — binary outputs (audio/video) have no
+    sensible "edit" path. The path is unchanged so the existing
+    /download endpoint serves the new bytes immediately.
+    """
+    job = JOBS.get(job_id)
+    if job is None:
+        raise HTTPException(404, "Job not found")
+    if job.status != "done":
+        raise HTTPException(400, f"Job not complete (status={job.status})")
+    if not job.output_path:
+        raise HTTPException(404, "Output path missing")
+    if job.output_format not in {"srt", "vtt", "txt", "json"}:
+        raise HTTPException(400, f"Edits not allowed for format {job.output_format!r}")
+
+    text = payload.get("text")
+    if not isinstance(text, str):
+        raise HTTPException(400, "Body must contain a string `text` field")
+
+    # Defensive: never let the UI escape the configured output dir. The path
+    # was originally chosen by the worker, so this is paranoia, but cheap.
+    job.output_path.parent.mkdir(parents=True, exist_ok=True)
+    job.output_path.write_text(text, encoding="utf-8")
+
+    # Re-derive segment count for SRT so the queue card reflects edits.
+    if job.output_format == "srt":
+        job.segments = sum(
+            1 for line in text.splitlines() if line.strip().isdigit()
+        )
+
+    return {"ok": True, "bytes": len(text.encode("utf-8")), "segments": job.segments}

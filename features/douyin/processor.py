@@ -10,6 +10,7 @@ import re
 import threading
 import urllib.request
 import urllib.error
+from datetime import datetime
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -102,24 +103,47 @@ def download_url(
     return output_path
 
 
+def _parse_create_time(create_time: str) -> Optional[datetime]:
+    """Parse the ISO timestamp the userscript writes (always UTC, with
+    a trailing ``Z``) and convert to the local timezone of the machine.
+    Returns ``None`` if the string is missing or unparseable."""
+    if not create_time:
+        return None
+    try:
+        # Python's fromisoformat doesn't accept a trailing 'Z' until 3.11,
+        # so swap it for an explicit offset for compatibility.
+        dt = datetime.fromisoformat(create_time.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    # `astimezone()` with no argument converts to the system local zone.
+    return dt.astimezone()
+
+
 def build_filename(video: dict, kind: str, output_dir: Path) -> Path:
     """Pick a non-clashing filename for a Douyin video/audio download.
 
-    Naming scheme: ``YYYY-MM-DD_<title>_<id>.<ext>``. The ``id`` keeps duplicates
-    from collapsing onto each other, the date sorts the folder usefully.
+    Naming scheme: ``YYYY-MM-DD_HH-MM-SS.<ext>`` based on the video's posting
+    time (``createTime`` in the JSON), converted to local time. We tried
+    embedding Chinese titles before — Windows codepages couldn't handle some
+    glyphs and Explorer rendered the folder as a mess. Timestamp-based names
+    sort chronologically and stay safe across filesystems. The existing
+    collision handler below appends `` (2)`` / `` (3)`` for the rare case
+    of two videos posted in the same second.
     """
     ext = "mp4" if kind == "video" else "mp3"
 
-    create_time = video.get("createTime") or ""
-    date_part = create_time[:10] if create_time and "T" in create_time else "unknown-date"
+    dt = _parse_create_time(video.get("createTime") or "")
+    if dt is not None:
+        stem = dt.strftime("%Y-%m-%d_%H-%M-%S")
+    else:
+        # Fallback if the JSON didn't include a timestamp. The video id is
+        # at least unique even if it's not human-readable.
+        vid_id = (video.get("id") or "").replace("/", "_")
+        stem = vid_id or "douyin_video"
 
-    title = video.get("title") or video.get("desc") or "video"
-    vid_id = (video.get("id") or "").replace("/", "_")
-
-    stem = safe_filename(f"{date_part}_{title}_{vid_id}")
+    stem = safe_filename(stem)
     candidate = output_dir / f"{stem}.{ext}"
 
-    # If the file already exists, append a numeric suffix rather than overwrite.
     if candidate.exists():
         n = 2
         while True:
