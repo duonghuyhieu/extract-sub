@@ -31,3 +31,6 @@ Thumbs.db
 
 # User-specific runtime config (generated on first use)
 downloader_settings.json
+
+# Persistent Chromium profile used by the Douyin auto-fetcher
+.douyin_browser_profile/

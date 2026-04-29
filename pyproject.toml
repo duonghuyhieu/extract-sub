@@ -39,6 +39,14 @@ gpu-cuda = [
     "nvidia-cublas-cu12",
     "nvidia-cudnn-cu12>=9",
 ]
+# Douyin auto-fetcher — drives a real Chromium with the user's logged-in
+# session via Playwright. Manual copy/paste of the userscript still works
+# without this, so it's optional.
+# Install with:  uv sync --extra douyin
+#                .venv/Scripts/python -m playwright install chromium
+douyin = [
+    "playwright>=1.45.0",
+]
 
 [tool.uv]
 package = false

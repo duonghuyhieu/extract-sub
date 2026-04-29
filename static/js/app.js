@@ -5,6 +5,7 @@ import { pollJobs } from "./jobs.js";
 import "./vision.js";
 import "./stt.js";
 import "./downloader.js";
+import "./douyin.js";
 
 // ---------- Capabilities ----------
 (async () => {

@@ -1,17 +1,41 @@
-// Polls /api/jobs and renders the shared queue panel for every feature.
-import { $, escapeHtml } from "./utils.js";
+// Polls /api/jobs and renders the dedicated Tasks panel.
+//
+// The panel is its own feature tab now (see `data-panel="tasks"`), so this
+// module is also responsible for the small badge on the sidebar nav item
+// — that's how the user knows something is running while they're on a
+// different tab.
+import { $, $$, escapeHtml } from "./utils.js";
 
-const panel   = $("#jobs-panel");
-const list    = $("#jobs-list");
-const summary = $("#jobs-summary");
+const list      = $("#jobs-list");
+const summary   = $("#jobs-summary");
+const empty     = $("#jobs-empty");
+const navBadge  = $("#nav-tasks-badge");
+const filterRow = $(".task-filters");
+const bulkRow   = $(".task-bulk");
+const countEls  = {
+  all:    $("[data-count='all']"),
+  active: $("[data-count='active']"),
+  done:   $("[data-count='done']"),
+  error:  $("[data-count='error']"),
+};
 
 let pollTimer = null;
+let currentFilter = "all";
 
 const KIND_LABEL = {
-  vision:   "OCR",
-  stt:      "STT",
-  download: "DL",
+  vision:           "OCR",
+  stt:              "STT",
+  download:         "DL",
+  "douyin-fetch":   "FETCH",
 };
+
+function statusBucket(job) {
+  // Treat pending + running as "active" — they're both "doing something".
+  if (job.status === "running" || job.status === "pending") return "active";
+  if (job.status === "done") return "done";
+  if (job.status === "error") return "error";
+  return "active";  // anything weird, surface it as active so it isn't lost
+}
 
 export async function pollJobs(immediate = false) {
   if (pollTimer) clearTimeout(pollTimer);
@@ -29,28 +53,55 @@ export async function pollJobs(immediate = false) {
 }
 
 function render(jobs) {
-  if (!jobs || jobs.length === 0) {
-    panel.classList.add("hidden");
-    list.innerHTML = "";
-    return;
-  }
-  panel.classList.remove("hidden");
+  jobs = jobs || [];
 
-  const running = jobs.filter((j) => j.status === "running" || j.status === "pending").length;
-  const done    = jobs.filter((j) => j.status === "done").length;
-  const errored = jobs.filter((j) => j.status === "error").length;
-  summary.textContent =
-    `${jobs.length} total` +
-    (running ? ` · ${running} running` : "") +
-    (done    ? ` · ${done} done`       : "") +
-    (errored ? ` · ${errored} error`   : "");
+  // Counts for the filter pills + the sidebar badge.
+  const counts = { all: jobs.length, active: 0, done: 0, error: 0 };
+  for (const j of jobs) counts[statusBucket(j)]++;
+
+  for (const [k, el] of Object.entries(countEls)) {
+    if (el) el.textContent = counts[k];
+  }
+  if (navBadge) {
+    if (counts.active > 0) {
+      navBadge.textContent = counts.active;
+      navBadge.classList.remove("hidden");
+    } else {
+      navBadge.classList.add("hidden");
+    }
+  }
+
+  // Top-of-panel summary text.
+  summary.textContent = jobs.length
+    ? `${jobs.length} total` +
+      (counts.active ? ` · ${counts.active} running` : "") +
+      (counts.done   ? ` · ${counts.done} done`     : "") +
+      (counts.error  ? ` · ${counts.error} error`   : "")
+    : "";
+
+  // Apply the current filter.
+  const filtered = currentFilter === "all"
+    ? jobs
+    : jobs.filter((j) => statusBucket(j) === currentFilter);
+
+  // Empty-state messaging — distinct copy for "nothing exists" vs
+  // "filter hides everything" so the user doesn't think they broke it.
+  if (jobs.length === 0) {
+    empty.textContent = "No tasks yet — start one from the other tabs and it'll show up here.";
+    empty.classList.remove("hidden");
+  } else if (filtered.length === 0) {
+    empty.textContent = `No ${currentFilter} tasks. Try a different filter.`;
+    empty.classList.remove("hidden");
+  } else {
+    empty.classList.add("hidden");
+  }
 
   // Diff existing nodes by id to avoid flicker.
-  const keep = new Set(jobs.map((j) => j.id));
+  const keep = new Set(filtered.map((j) => j.id));
   for (const li of Array.from(list.children)) {
     if (!keep.has(li.dataset.jobId)) li.remove();
   }
-  for (const job of jobs) {
+  for (const job of filtered) {
     let li = list.querySelector(`[data-job-id="${job.id}"]`);
     if (!li) {
       li = document.createElement("li");
@@ -96,6 +147,61 @@ function updateCard(li, job) {
   `;
 }
 
+// ---------- Filter pills ----------
+filterRow?.addEventListener("click", (e) => {
+  const btn = e.target.closest(".task-filter");
+  if (!btn) return;
+  for (const b of $$(".task-filter", filterRow)) b.classList.toggle("active", b === btn);
+  currentFilter = btn.dataset.filter;
+  pollJobs(true);
+});
+
+// ---------- Bulk actions ----------
+//
+// "Clear done" / "Clear errors" / "Clear all" — each issues one DELETE per
+// matching job. The /api/jobs/<id> endpoint already exists and best-effort-
+// removes the artefact file. We don't touch running jobs from the bulk
+// menu; "Clear all" still leaves them in place since deleting a running
+// job can leak threads.
+
+bulkRow?.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-bulk]");
+  if (!btn) return;
+  const which = btn.dataset.bulk;
+
+  let res;
+  try {
+    res = await fetch("/api/jobs");
+    if (!res.ok) return;
+  } catch { return; }
+  const { jobs } = await res.json();
+
+  const targets = jobs.filter((j) => {
+    const s = statusBucket(j);
+    if (which === "done")   return s === "done";
+    if (which === "error")  return s === "error";
+    if (which === "all")    return s !== "active";   // never nuke running ones
+    return false;
+  });
+
+  if (!targets.length) return;
+  // Confirm only for "Clear all" — done/error are obviously safe.
+  if (which === "all" && !confirm(`Remove ${targets.length} finished tasks from the list?`)) {
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    await Promise.all(targets.map((j) =>
+      fetch(`/api/jobs/${j.id}`, { method: "DELETE" }).catch(() => {})
+    ));
+  } finally {
+    btn.disabled = false;
+    pollJobs(true);
+  }
+});
+
+// ---------- Per-row actions (download / delete one) ----------
 list.addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-act]");
   if (!btn) return;

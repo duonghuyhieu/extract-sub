@@ -54,6 +54,31 @@
           <em>YouTube · powered by yt-dlp</em>
         </span>
       </button>
+      <button class="nav-item" data-feature="douyin">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M9 4v9.5a3.5 3.5 0 1 1-3.5-3.5"/>
+            <path d="M9 4c.5 3 2.5 5 5 5"/>
+          </svg>
+        </span>
+        <span class="nav-text">
+          <strong>Douyin Scraper</strong>
+          <em>Bulk-download a creator's videos</em>
+        </span>
+      </button>
+
+      <p class="nav-section">Activity</p>
+      <button class="nav-item" data-feature="tasks">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M5 7h14M5 12h10M5 17h6"/>
+          </svg>
+        </span>
+        <span class="nav-text">
+          <strong>Tasks <span class="nav-badge hidden" id="nav-tasks-badge">0</span></strong>
+          <em>Running jobs &amp; recent history</em>
+        </span>
+      </button>
     </nav>
 
     <footer class="sidebar-footer">
@@ -356,13 +381,164 @@
       </div>
     </section>
 
-    <!-- =================  JOBS QUEUE (shared)  ================= -->
-    <section class="jobs-panel hidden" id="jobs-panel">
-      <div class="jobs-head">
-        <h2>Queue</h2>
-        <span class="muted" id="jobs-summary"></span>
+    <!-- =================  DOUYIN SCRAPER  ================= -->
+    <section class="feature-panel hidden" data-panel="douyin">
+      <header class="panel-head">
+        <h2>Douyin Scraper</h2>
+        <p class="muted">Bulk-download every video from a Douyin creator. Anti-bot makes a pure server-side scrape unreliable, so the metadata is collected by a tiny script that runs in your own browser session.</p>
+      </header>
+
+      <!-- Settings (shared with the YouTube downloader) -->
+      <details class="advanced" id="dy-settings-card">
+        <summary>Settings <span class="muted" id="dy-settings-summary"></span></summary>
+        <div class="row two-col">
+          <div>
+            <label class="field-label" for="dy-path">Save to</label>
+            <div class="path-row">
+              <input type="text" id="dy-path" placeholder="C:\Users\you\Downloads\MediaToolkit" />
+              <button class="secondary btn-tight" id="dy-path-browse" title="Browse for a folder">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
+                </svg>
+                Browse…
+              </button>
+              <button class="secondary btn-tight" id="dy-path-reset" title="Reset to default">↺</button>
+            </div>
+            <p class="muted micro">Douyin downloads land in <code>&lt;Save to&gt;/douyin/</code>. Shared with the YouTube downloader.</p>
+          </div>
+          <div>
+            <label class="field-label" for="dy-concurrent">Concurrent downloads</label>
+            <div class="slider-row">
+              <input type="range" id="dy-concurrent" min="1" max="6" step="1" value="2" />
+              <span class="slider-val" id="dy-concurrent-val">2</span>
+            </div>
+            <p class="muted micro">Max simultaneous video saves. Shared with the YouTube downloader.</p>
+          </div>
+        </div>
+        <div class="row" style="display:flex; justify-content:flex-end;">
+          <button class="primary btn-tight" id="dy-settings-save">Save settings</button>
+        </div>
+      </details>
+
+      <!-- Auto-fetch (Playwright) -->
+      <div class="dy-auto" id="dy-auto-wrap">
+        <div class="dy-auto-row">
+          <input type="text" id="dy-auto-url"
+                 placeholder="https://www.douyin.com/user/MS4wLjABAAAA…  (Douyin profile URL)" />
+          <button class="primary" id="dy-auto-btn" disabled title="Auto-fetch via Playwright">
+            <span class="check">⚡</span> <span id="dy-auto-label">Auto fetch</span>
+          </button>
+        </div>
+        <p class="muted micro" id="dy-auto-hint">
+          Checking Playwright availability…
+        </p>
       </div>
+
+      <!-- Step 1: get the JSON via userscript (manual fallback) -->
+      <details class="advanced" id="dy-howto">
+        <summary>Manual: copy &amp; paste the script yourself <span class="muted">· fallback</span></summary>
+        <p class="muted micro">Use this if Playwright isn't installed or you'd rather drive your own browser.</p>
+        <ol class="dy-steps">
+          <li>Open the creator's profile in your browser, e.g. <code>https://www.douyin.com/user/MS4wLjABAAAA…</code>.</li>
+          <li>Open DevTools (F12) and switch to the <strong>Console</strong> tab.</li>
+          <li>
+            Click <button class="secondary btn-tight" id="dy-copy-script" type="button">Copy fetch script</button>
+            <button class="secondary btn-tight" id="dy-show-script" type="button">Show script</button>
+            <a class="secondary btn-tight" id="dy-open-script" href="/js/douyin-userscript.js" target="_blank" rel="noopener">Open in new tab</a>
+            then paste it into the console and press Enter.
+          </li>
+          <li>The script walks every page of videos and downloads a <code>douyin-video-data-…json</code> file. Wait for the alert.</li>
+          <li>Drop that JSON file into the box below.</li>
+        </ol>
+        <p class="muted micro" id="dy-copy-status"></p>
+        <textarea id="dy-script-box" class="dy-script-box hidden" readonly spellcheck="false"
+          placeholder="Loading script…"></textarea>
+      </details>
+
+      <!-- Step 2: drop the JSON -->
+      <div class="drop-zone" data-dz="douyin">
+        <div class="drop-inner">
+          <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+          </svg>
+          <h3>Drop the Douyin JSON here</h3>
+          <p>or click to browse — the file the userscript downloaded</p>
+          <input type="file" data-fi="douyin" accept="application/json,.json" hidden />
+        </div>
+      </div>
+
+      <!-- Step 3: pick + download -->
+      <div id="dy-results" class="dl-results hidden">
+        <div class="dl-results-head">
+          <div class="dl-results-meta">
+            <strong id="dy-results-title">Videos</strong>
+            <span class="muted" id="dy-results-count"></span>
+          </div>
+          <div class="dl-results-actions">
+            <label class="checkbox compact">
+              <input type="checkbox" id="dy-select-all" checked />
+              <span>Select all</span>
+            </label>
+            <button class="secondary btn-tight" id="dy-export-json" title="Save the imported metadata back out">Export JSON</button>
+            <button class="secondary btn-tight" id="dy-export-txt" title="Save just the video URLs">Export URLs</button>
+            <button class="primary" id="dy-download-video" disabled>
+              <span class="check">↓</span> <span id="dy-download-video-label">Download videos</span>
+            </button>
+            <button class="primary" id="dy-download-audio" disabled>
+              <span class="check">♪</span> <span id="dy-download-audio-label">Download audios</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="dy-table-wrap">
+          <table class="dy-table">
+            <thead>
+              <tr>
+                <th class="col-check"></th>
+                <th class="col-num">#</th>
+                <th class="col-cover">Cover</th>
+                <th class="col-title">Title</th>
+                <th class="col-date">Date</th>
+                <th class="col-links">Links</th>
+              </tr>
+            </thead>
+            <tbody id="dy-list"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================  TASKS (shared activity panel)  ================= -->
+    <section class="feature-panel hidden" data-panel="tasks" id="jobs-panel">
+      <header class="panel-head">
+        <h2>Tasks</h2>
+        <p class="muted">All running and recent jobs across every feature. <span id="jobs-summary"></span></p>
+      </header>
+
+      <div class="tasks-toolbar">
+        <div class="task-filters" role="tablist" aria-label="Filter tasks by status">
+          <button type="button" class="task-filter active" data-filter="all">
+            All <span class="count" data-count="all">0</span>
+          </button>
+          <button type="button" class="task-filter" data-filter="active">
+            Running <span class="count" data-count="active">0</span>
+          </button>
+          <button type="button" class="task-filter" data-filter="done">
+            Done <span class="count" data-count="done">0</span>
+          </button>
+          <button type="button" class="task-filter" data-filter="error">
+            Errors <span class="count" data-count="error">0</span>
+          </button>
+        </div>
+        <div class="task-bulk">
+          <button type="button" class="secondary btn-tight" data-bulk="done"   title="Remove every successfully-completed job">Clear done</button>
+          <button type="button" class="secondary btn-tight" data-bulk="error"  title="Remove every failed job">Clear errors</button>
+          <button type="button" class="secondary btn-tight" data-bulk="all"    title="Remove every job (running ones keep running)">Clear all</button>
+        </div>
+      </div>
+
       <ul class="jobs-list" id="jobs-list"></ul>
+      <p class="jobs-empty muted hidden" id="jobs-empty">No tasks yet — start one from the other tabs and it'll show up here.</p>
     </section>
   </main>
 </div>
