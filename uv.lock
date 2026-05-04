@@ -234,6 +234,7 @@ dependencies = [
     { name = "numpy" },
     { name = "onnxruntime" },
     { name = "opencv-python" },
+    { name = "playwright" },
     { name = "python-multipart" },
     { name = "rapidfuzz" },
     { name = "rapidocr" },
@@ -242,9 +243,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-douyin = [
-    { name = "playwright" },
-]
 gpu-cuda = [
     { name = "nvidia-cublas-cu12" },
     { name = "nvidia-cudnn-cu12" },
@@ -263,14 +261,14 @@ requires-dist = [
     { name = "onnxruntime", specifier = ">=1.17,<1.20" },
     { name = "onnxruntime-directml", marker = "extra == 'gpu-directml'", specifier = ">=1.17,<1.20" },
     { name = "opencv-python", specifier = ">=4.10.0.84" },
-    { name = "playwright", marker = "extra == 'douyin'", specifier = ">=1.45.0" },
+    { name = "playwright", specifier = ">=1.45.0" },
     { name = "python-multipart", specifier = ">=0.0.12" },
     { name = "rapidfuzz", specifier = ">=3.9.7" },
     { name = "rapidocr", specifier = ">=3.3.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30.6" },
     { name = "yt-dlp", specifier = ">=2024.8.6" },
 ]
-provides-extras = ["gpu-directml", "gpu-cuda", "douyin"]
+provides-extras = ["gpu-directml", "gpu-cuda"]
 
 [[package]]
 name = "fastapi"

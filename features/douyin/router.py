@@ -79,9 +79,6 @@ def start_downloads(payload: dict = Body(...)):
     set_concurrency(cur.get("concurrent_downloads", 3))
 
     output_dir = Path(payload.get("download_path") or cur["download_path"]).expanduser()
-    # Drop everything into a `douyin/` subfolder so it doesn't mix with
-    # YouTube downloads.
-    output_dir = output_dir / "douyin"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     job_ids: list[str] = []
@@ -98,6 +95,8 @@ def start_downloads(payload: dict = Body(...)):
 
         job = create_job(kind="download", display_name=f"[Douyin] {title}")
         job.output_format = "video" if kind == "video" else "audio"
+        job.retry_endpoint = "/api/douyin/start"
+        job.retry_payload = {"items": [item], "kind": kind, "download_path": str(output_dir)}
 
         def make_worker(url: str, target: Path):
             def worker(job: Job, progress: ProgressCb) -> None:

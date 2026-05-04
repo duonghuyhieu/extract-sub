@@ -139,6 +139,8 @@ def start_downloads(payload: dict = Body(...)):
 
         job = create_job(kind="download", display_name=title)
         job.output_format = "video"
+        job.retry_endpoint = "/api/download/start"
+        job.retry_payload = {"items": [item], "download_path": str(output_dir), "format_preset": preset}
 
         def make_worker(url: str, title: str):
             def worker(job: Job, progress: ProgressCb) -> None:

@@ -308,7 +308,7 @@ exportTxtBtn.addEventListener("click", () => {
 
 function refreshSettingsSummary() {
   const path = (pathInput.value || "").trim() || "(unset)";
-  settingsSummary.textContent = `· ${path}/douyin/`;
+  settingsSummary.textContent = `· ${path}`;
 }
 
 async function loadSettings() {

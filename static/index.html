@@ -66,6 +66,19 @@
           <em>Bulk-download a creator's videos</em>
         </span>
       </button>
+      <button class="nav-item" data-feature="logo-stamp">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="2" y="2" width="20" height="20" rx="3"/>
+            <circle cx="8" cy="8" r="2"/>
+            <path d="M14 10l3 3-3 3M10 13h7"/>
+          </svg>
+        </span>
+        <span class="nav-text">
+          <strong>Chèn Logo</strong>
+          <em>Đóng dấu logo vào video</em>
+        </span>
+      </button>
 
       <p class="nav-section">Activity</p>
       <button class="nav-item" data-feature="tasks">
@@ -505,6 +518,72 @@
             <tbody id="dy-list"></tbody>
           </table>
         </div>
+      </div>
+    </section>
+
+    <!-- =================  LOGO STAMP  ================= -->
+    <section class="feature-panel hidden" data-panel="logo-stamp">
+      <header class="panel-head">
+        <h2>Chèn Logo vào Video</h2>
+        <p class="muted">Chọn thư mục chứa video, chọn vị trí logo, rồi chèn — ghi đè trực tiếp lên file gốc.</p>
+      </header>
+
+      <!-- Folder picker row -->
+      <div class="row dl-url-row">
+        <input type="text" id="ls-folder" placeholder="C:\Users\you\Videos\..." readonly />
+        <button class="secondary" id="ls-folder-browse">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
+          </svg>
+          Chọn thư mục
+        </button>
+      </div>
+
+      <!-- Video list + controls (hidden until folder selected) -->
+      <div id="ls-results" class="dl-results hidden">
+        <div class="dl-results-head">
+          <div class="dl-results-meta">
+            <strong id="ls-results-title">Video</strong>
+            <span class="muted" id="ls-results-count"></span>
+          </div>
+          <div class="dl-results-actions">
+            <label class="checkbox compact">
+              <input type="checkbox" id="ls-select-all" checked />
+              <span>Chọn tất cả</span>
+            </label>
+            <button class="primary" id="ls-stamp-btn" disabled>
+              <span class="check">✓</span> <span id="ls-stamp-label">Chèn logo</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Position + scale controls -->
+        <div class="row two-col" style="padding: 0 0 8px 0;">
+          <div>
+            <label class="field-label">Vị trí logo</label>
+            <div class="ls-position-grid" id="ls-position-grid">
+              <button class="ls-pos-btn" data-pos="top-left"     title="Trên trái">↖</button>
+              <button class="ls-pos-btn" data-pos="top-right"    title="Trên phải">↗</button>
+              <button class="ls-pos-btn" data-pos="center"       title="Giữa">⊙</button>
+              <button class="ls-pos-btn" data-pos="bottom-left"  title="Dưới trái">↙</button>
+              <button class="ls-pos-btn ls-pos-active" data-pos="bottom-right" title="Dưới phải">↘</button>
+            </div>
+            <p class="muted micro" id="ls-pos-label">Vị trí: Dưới phải</p>
+          </div>
+          <div>
+            <label class="field-label" for="ls-scale">Kích thước logo</label>
+            <div class="slider-row">
+              <input type="range" id="ls-scale" min="2" max="50" step="1" value="15" />
+              <span class="slider-val" id="ls-scale-val">15%</span>
+            </div>
+            <p class="muted micro">Phần trăm chiều rộng video</p>
+            <div class="ls-logo-preview">
+              <img src="/api/logo-stamp/logo" alt="Logo preview" id="ls-logo-img" />
+            </div>
+          </div>
+        </div>
+
+        <ul class="dl-list" id="ls-list"></ul>
       </div>
     </section>
 

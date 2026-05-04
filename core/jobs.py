@@ -14,7 +14,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
 
-from fastapi import APIRouter, Body, HTTPException
+import urllib.request as _urllib_request
+
+from fastapi import APIRouter, Body, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 
 
@@ -37,6 +39,8 @@ class Job:
     output_path: Optional[Path] = None     # the artefact to download
     output_format: str = "srt"             # extension hint for the download name
     created_at: float = field(default_factory=time.time)
+    retry_endpoint: Optional[str] = None   # POST endpoint to re-queue this job
+    retry_payload: Optional[dict] = None   # body to send to retry_endpoint
 
 
 JOBS: dict[str, Job] = {}
@@ -84,6 +88,7 @@ def _job_to_dict(job: Job) -> dict:
         "display_name": job.display_name,
         "created_at": job.created_at,
         "output_format": job.output_format,
+        "retry_endpoint": job.retry_endpoint,
     }
 
 
@@ -102,6 +107,28 @@ def job_status(job_id: str):
     if job is None:
         raise HTTPException(404, "Job not found")
     return _job_to_dict(job)
+
+
+@router.post("/{job_id}/retry")
+async def retry_job(job_id: str, request: Request):
+    job = JOBS.get(job_id)
+    if job is None:
+        raise HTTPException(404, "Job not found")
+    if job.status != "error":
+        raise HTTPException(400, f"Job is not in error state (status={job.status})")
+    if not job.retry_endpoint or job.retry_payload is None:
+        raise HTTPException(400, "Job does not support retry")
+
+    import json as _json
+
+    base_url = str(request.base_url).rstrip("/")
+    url = f"{base_url}{job.retry_endpoint}"
+    body = _json.dumps(job.retry_payload).encode()
+    req = _urllib_request.Request(
+        url, data=body, headers={"Content-Type": "application/json"}, method="POST"
+    )
+    with _urllib_request.urlopen(req, timeout=30) as resp:
+        return _json.loads(resp.read())
 
 
 @router.delete("/{job_id}")

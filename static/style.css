@@ -783,6 +783,7 @@ button { font: inherit; cursor: pointer; }
 .kind-badge.kind-vision { background: var(--accent-soft); color: var(--accent); }
 .kind-badge.kind-download { background: #ddf5e3; color: var(--ok); }
 .kind-badge.kind-douyin-fetch { background: #fde2eb; color: #a52749; }
+.kind-badge.kind-logo-stamp   { background: #ede9ff; color: #5b3db0; }
 
 .job-card .job-name {
   font-weight: 600; font-size: 13.5px;
@@ -971,3 +972,62 @@ code {
   .dy-table .col-cover, .dy-table .col-links { display: none; }
   .dy-cover { width: 48px; height: 64px; }
 }
+
+/* ============  LOGO STAMP  ============ */
+.ls-position-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  grid-template-rows: repeat(2, 44px);
+  gap: 6px;
+  margin-top: 8px;
+}
+/* visual layout: TL TC TR / BL BC BR → we only have 5 buttons */
+.ls-pos-btn {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.ls-pos-btn:hover { background: var(--bg); border-color: var(--accent); }
+.ls-pos-btn.ls-pos-active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+/* Place the 5 buttons in a 3×2 visual grid:
+   top-left(1,1)  top-right(1,3)
+   center(2,2)
+   bottom-left(2,1)  bottom-right(2,3)   */
+.ls-pos-btn[data-pos="top-left"]     { grid-area: 1 / 1; }
+.ls-pos-btn[data-pos="top-right"]    { grid-area: 1 / 3; }
+.ls-pos-btn[data-pos="center"]       { grid-area: 1 / 2; }
+.ls-pos-btn[data-pos="bottom-left"]  { grid-area: 2 / 1; }
+.ls-pos-btn[data-pos="bottom-right"] { grid-area: 2 / 3; }
+
+.ls-logo-preview {
+  margin-top: 12px;
+  max-width: 120px;
+  background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 12px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 6px;
+}
+.ls-logo-preview img {
+  max-width: 100%;
+  display: block;
+}
+
+#ls-list .dl-item {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+#ls-list .dl-item:last-child { border-bottom: none; }
+

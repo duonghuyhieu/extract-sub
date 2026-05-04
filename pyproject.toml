@@ -23,6 +23,10 @@ dependencies = [
     # streams (otherwise the 'Best' / '1080p' presets fall back to single
     # streams, max ~720p on YouTube).
     "yt-dlp>=2024.08.06",
+    # Douyin auto-fetcher — drives a real Chromium with the user's logged-in
+    # session via Playwright. Chromium browser is installed separately via
+    # `playwright install chromium` (handled automatically by run.bat).
+    "playwright>=1.45.0",
 ]
 
 [project.optional-dependencies]
@@ -38,14 +42,6 @@ gpu-directml = [
 gpu-cuda = [
     "nvidia-cublas-cu12",
     "nvidia-cudnn-cu12>=9",
-]
-# Douyin auto-fetcher — drives a real Chromium with the user's logged-in
-# session via Playwright. Manual copy/paste of the userscript still works
-# without this, so it's optional.
-# Install with:  uv sync --extra douyin
-#                .venv/Scripts/python -m playwright install chromium
-douyin = [
-    "playwright>=1.45.0",
 ]
 
 [tool.uv]

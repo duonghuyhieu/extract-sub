@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 from core import jobs, media
 from core.config import STATIC_DIR
-from features import douyin, downloader, speech_to_text, vision_ocr
+from features import douyin, downloader, logo_stamp, speech_to_text, vision_ocr
 
 app = FastAPI(title="Local Media Toolkit")
 
@@ -38,6 +38,7 @@ app.include_router(vision_ocr.router)
 app.include_router(speech_to_text.router)
 app.include_router(downloader.router)
 app.include_router(douyin.router)
+app.include_router(logo_stamp.router)
 
 # Static frontend last so /api/* never gets shadowed.
 app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="static")

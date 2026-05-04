@@ -39,6 +39,7 @@ const KIND_LABEL = {
   stt:              "STT",
   download:         "DL",
   "douyin-fetch":   "FETCH",
+  "logo-stamp":     "LOGO",
 };
 
 const TEXT_FORMATS = new Set(["srt", "vtt", "txt", "json"]);
@@ -164,6 +165,7 @@ function updateCard(li, job) {
     <div class="job-actions">
       ${editable ? `<button class="btn-sm" data-act="edit" data-id="${job.id}" title="Edit before download">Edit</button>` : ""}
       ${isDone && !isDownload ? `<button class="btn-sm primary" data-act="download" data-id="${job.id}">Download</button>` : ""}
+      ${isErr && job.retry_endpoint ? `<button class="btn-sm" data-act="retry" data-id="${job.id}">Retry</button>` : ""}
       <button class="btn-sm" data-act="delete" data-id="${job.id}" title="Remove from list">✕</button>
     </div>
     <div class="job-status" title="${escapeHtml(status)}">${escapeHtml(status)}</div>
@@ -235,6 +237,20 @@ list.addEventListener("click", async (e) => {
     window.location.href = `/api/jobs/${id}/download`;
   } else if (act === "edit") {
     openEditor(id);
+  } else if (act === "retry") {
+    btn.disabled = true;
+    try {
+      const r = await fetch(`/api/jobs/${id}/retry`, { method: "POST" });
+      if (!r.ok) {
+        const msg = await r.text();
+        alert(`Retry failed: ${msg}`);
+      }
+    } catch (err) {
+      alert(`Retry failed: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+    }
+    pollJobs(true);
   } else if (act === "delete") {
     try { await fetch(`/api/jobs/${id}`, { method: "DELETE" }); } catch {}
     pollJobs(true);

@@ -6,6 +6,7 @@ import "./vision.js";
 import "./stt.js";
 import "./downloader.js";
 import "./douyin.js";
+import "./logo-stamp.js";
 
 // ---------- Capabilities ----------
 (async () => {
